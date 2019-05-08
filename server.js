@@ -5,17 +5,21 @@ const cors = require("cors");
 const app = express();
 const knex = require("knex");
 
-const postgres = knex({
+const db = knex({
   client: "pg",
   connection: {
     host: "127.0.0.1",
     user: "postgres",
-    password: "",
+    password: "marionette",
     database: "smart"
   }
 });
 
-postgres.select("*").from("users");
+// db.select("*")
+//   .from("users")
+//   .then(data => {
+//     console.log(data);
+//   });
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -66,43 +70,46 @@ app.post("/signin", (req, res) => {
 
 app.get("/profile/:id", (req, res) => {
   const { id } = req.params;
-  let found = false;
-  database.users.forEach(user => {
-    if (user.id === id) {
-      found = true;
-      return res.json(user);
-    }
-  });
-  if (!found) {
-    res.status(400).json("Not found");
-  }
+  db.select("*")
+    .from("users")
+    .where({
+      id: id
+    })
+    .then(user => {
+      if (user.length) {
+        res.json(user[0]);
+      } else {
+        res.status(400).json("Not Found");
+      }
+    })
+    .catch(err => res.status(400).json("Error getting user"));
 });
 
 app.post("/register", (req, res) => {
   const { email, name } = req.body;
-  database.users.push({
-    id: "125",
-    name: name,
-    email: email,
-    entries: 0,
-    joined: new Date()
-  });
-  res.json(database.users[database.users.length - 1]);
+  db("users")
+    .returning("*")
+    .insert({
+      email: email,
+      name: name,
+      joined: new Date()
+    })
+    .then(user => {
+      res.json(user[0]);
+    })
+    .catch(err => res.status(400).json("Something went wrong here..."));
 });
 
 app.put("/image", (req, res) => {
   const { id } = req.body;
-  let found = false;
-  database.users.forEach(user => {
-    if (user.id === id) {
-      found = true;
-      user.entries++;
-      return res.json(user.entries);
-    }
-  });
-  if (!found) {
-    res.status(400).json("Not found");
-  }
+  db("users")
+    .where("id", "=", id)
+    .increment("entries", 1)
+    .returning("entries")
+    .then(entries => {
+      Res.json(entries[0]);
+    })
+    .catch(err => res.status(400).json("Unable to get entries"));
 });
 
 app.listen(4000, () => {
