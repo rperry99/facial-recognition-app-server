@@ -43,6 +43,10 @@ app.put("/image", (req, res) => {
   image.handleImage(req, res, db);
 });
 
+app.post("/imageUrl", (req, res) => {
+  image.handleApiCall(req, res);
+});
+
 app.listen(4000, () => {
   console.log("I'm listening");
 });
